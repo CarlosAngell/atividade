@@ -12,9 +12,62 @@ const formularioCadastro = document.getElementById("formCadastro");
 formularioCadastro.addEventListener("submit", enviarFormularioCadastro, true);
 
 function enviarFormularioCadastro(event) {
-    event.preventDefault();
-    alert("Requer implementação...");
+  event.preventDefault();
+  
+  $("#formCadastro .invalid-feedback").remove();
+  $("#formCadastro .is-invalid").removeClass("is-invalid");
+
+  fetch(URL_API + "/api/v1/cadastro", {
+      method: "POST",
+      headers: new Headers({
+          Accept: "application/json",
+          'Content-Type': "application/json",
+      }),
+      body: JSON.stringify({
+        nomeCompleto: document.getElementById("cadastroNomeCompleto").value,
+        dataNascimento: document.getElementById("cadastroDataNascimento").value,
+        sexo: document.querySelector("input[name=cadastroSexo]:checked").value,
+        cep: document.getElementById("cadastroCep").value.replace('-', ''),
+        cpf: document.getElementById("cadastroCpf").value.replace(/[.-]/g, ''),
+        uf: document.getElementById("cadastroUf").value,
+        cidade: document.getElementById("cadastroCidade").value,
+        logradouro: document.getElementById("cadastroLogradouro").value,
+        numeroLogradouro: document.getElementById("cadastroNumeroLogradouro").value,
+        email: document.getElementById("cadastroEmail").value
+      })
+  })
+      .then(response => {
+          return new Promise((myResolve, myReject) => {
+            response.json().then(json => {
+              console.log(response.status);
+                  myResolve({ "status": response.status, json });
+            });
+
+
+            alert('Enviado!');
+            $('#formCadastro input').val("");
+            $('#btnSubmitCadastro').val("");
+            $('#cadastroDeAcordo').prop("checked", false);
+            $('#btnSubmitCadastro').prop('disabled', true);
+          });
+      }).then(response => {
+          if (response && response.json.errors) {
+            Object.entries(response.json.errors).forEach((obj, index) => {
+                const filde = obj[0];
+                const id = 'cadastro' + filde.charAt(0).toUpperCase() + filde.slice(1);
+                const texto = obj[1][0];
+                criarDivImcDeCampoInvalido(id, texto, index == 0);
+              })
+          }
+      }).catch(err => {
+          console.log(err);
+      });
 }
+
+$('#cadastroDeAcordo').click(function () {
+  var isChecked = $(this).is(':checked');
+    $('#btnSubmitCadastro').prop('disabled', !isChecked);
+});
 
 /* FIM ENVIAR CADASTRO */
 
@@ -54,8 +107,25 @@ function criarOption(valor, texto) {
 
 
 /* PREENCHER ENDEREÇO */
-function popularEnderecoCadastro(){
-    alert("Requer implementação...");
+function popularEnderecoCadastro() {
+  
+  let cep = document.getElementById("cadastroCep").value;
+  ce = cep.replace('-', '');
+
+  fetch(URL_API + "/api/v1/endereco/" + cep, {
+    method: "get",
+  })
+    .then(response => {
+      return response.json();
+    }).then(cepObj => {
+      console.log(cepObj);
+      document.getElementById("cadastroLogradouro").value = cepObj.logradouro;
+      document.getElementById('cadastroUf').value = cepObj.uf;
+
+  }).catch(err => {
+      alert("Erro ao pegar o CEP");
+      console.log(err);
+  })
 }
 /* FIM PREENCHER ENDEREÇO */
 
